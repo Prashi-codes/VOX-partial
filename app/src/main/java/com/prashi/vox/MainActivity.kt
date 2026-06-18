@@ -1,5 +1,12 @@
 package com.prashi.vox
 
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,10 +19,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.prashi.vox.ui.theme.VOXTheme
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +39,11 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
+
+    var spokenText by remember {
+        mutableStateOf("Status: Ready")
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -44,23 +52,21 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center
     ) {
 
-        Text(
-            text = "VOX"
-        )
+        Text(text = "VOX")
 
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick = { }
+            onClick = {
+                spokenText = "Voice feature coming next..."
+            }
         ) {
             Text("Talk to VOX")
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        Text(
-            text = "Status: Ready"
-        )
+        Text(text = spokenText)
     }
 }
 
