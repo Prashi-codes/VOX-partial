@@ -4,21 +4,24 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.speech.*
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import java.text.SimpleDateFormat
 import java.util.*
 
 class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
-
+    private var autoListen = true
     private lateinit var recognizer: SpeechRecognizer
     private lateinit var tts: TextToSpeech
 
@@ -32,44 +35,82 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         tts = TextToSpeech(this, this)
 
         setContent {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
+            MaterialTheme {
 
-                Text("VOX Assistant", style = MaterialTheme.typography.headlineMedium)
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
 
-                Spacer(Modifier.height(20.dp))
+                    Text(
+                        text = "VOX ASSISTANT",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
 
-                Button(onClick = { startListening() }) {
-                    Text(if (listeningState.value) "Listening..." else "Talk to VOX")
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Button(
+                        onClick = {
+                            startListening()
+                        }
+                    ) {
+                        Text(
+                            if (listeningState.value)
+                                "Listening..."
+                            else
+                                "Talk to VOX"
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text(textState.value)
                 }
-
-                Spacer(Modifier.height(20.dp))
-
-                Text(textState.value)
             }
         }
     }
 
     override fun onInit(status: Int) {
-        tts.language = Locale.US
-        tts.setSpeechRate(0.9f)
+        if (status == TextToSpeech.SUCCESS) {
+            tts.language = Locale.US
+            tts.setSpeechRate(0.9f)
+            tts.setPitch(1.0f)
+        }
     }
+    override fun onStop() {
+        super.onStop()
 
+        autoListen = false
+
+        try {
+            recognizer.stopListening()
+        } catch (_: Exception) {
+        }
+    }
     private fun startListening() {
-
+        if (listeningState.value) return
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.RECORD_AUDIO
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            textState.value = "Mic permission required"
+            textState.value = "Microphone permission required"
             return
         }
 
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+            )
+            putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE,
+                Locale.getDefault()
+            )
+        }
 
         recognizer.setRecognitionListener(object : RecognitionListener {
 
@@ -84,18 +125,19 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
                 val text = results
                     ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                    ?.firstOrNull() ?: ""
+                    ?.firstOrNull()
+                    ?: ""
 
                 textState.value = text
 
-                if (text.isNotEmpty()) {
-                    askAI(text)
+                if (text.isNotBlank()) {
+                    handleInput(text)
                 }
             }
 
             override fun onError(error: Int) {
                 listeningState.value = false
-                textState.value = "Try again"
+                textState.value = "Try Again"
             }
 
             override fun onEndOfSpeech() {
@@ -112,91 +154,117 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         recognizer.startListening(intent)
     }
 
-    private fun askAI(question: String) {
+    private fun handleInput(text: String) {
 
-        Thread {
-            try {
+        val msg = text.lowercase()
 
-                val url = java.net.URL(
-                    "https://api-inference.huggingface.co/models/google/flan-t5-small"
-                )
+        when {
 
-                val conn = url.openConnection() as java.net.HttpURLConnection
+            msg.contains("hello") ->
+                speak("Hello Prashanth. How can I help you?")
 
-                conn.requestMethod = "POST"
+            msg.contains("who are you") ->
+                speak("I am VOX, your personal assistant.")
 
-                conn.setRequestProperty(
-                    "Authorization",
-                    "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"
-                )
+            msg.contains("time") -> {
+                val time = SimpleDateFormat(
+                    "hh:mm a",
+                    Locale.getDefault()
+                ).format(Date())
 
-                conn.setRequestProperty(
-                    "Content-Type",
-                    "application/json"
-                )
-
-                conn.connectTimeout = 15000
-                conn.readTimeout = 15000
-                conn.doOutput = true
-
-                val body = """
-                {
-                  "inputs": "$question"
-                }
-            """.trimIndent()
-
-                conn.outputStream.use {
-                    it.write(body.toByteArray())
-                }
-
-                val code = conn.responseCode
-
-                val response = if (code in 200..299) {
-                    conn.inputStream.bufferedReader().readText()
-                } else {
-                    conn.errorStream?.bufferedReader()?.readText()
-                        ?: "Unknown error"
-                }
-
-                runOnUiThread {
-
-                    textState.value = "HTTP $code\n$response"
-
-                    if (code == 200) {
-
-                        try {
-
-                            val arr = org.json.JSONArray(response)
-
-                            val reply = arr
-                                .getJSONObject(0)
-                                .optString(
-                                    "generated_text",
-                                    "No response"
-                                )
-
-                            speak(reply)
-
-                        } catch (e: Exception) {
-                            speak("Response received")
-                        }
-
-                    } else {
-                        speak("Server error")
-                    }
-                }
-
-            } catch (e: Exception) {
-                runOnUiThread {
-                    textState.value = e.toString()
-                }
+                speak("Current time is $time")
             }
 
-        }.start()
+            msg.contains("date") -> {
+                val date = SimpleDateFormat(
+                    "dd MMMM yyyy",
+                    Locale.getDefault()
+                ).format(Date())
+
+                speak("Today is $date")
+            }
+
+            msg.contains("open youtube") ->
+                openApp(
+                    "com.google.android.youtube",
+                    "YouTube"
+                )
+
+            msg.contains("open whatsapp") ->
+                openApp(
+                    "com.whatsapp",
+                    "WhatsApp"
+                )
+
+            msg.contains("open chrome") ->
+                openApp(
+                    "com.android.chrome",
+                    "Chrome"
+                )
+
+            msg.contains("good morning") ->
+                speak("Good morning Prashanth")
+
+            msg.contains("good night") ->
+                speak("Good night Prashanth")
+
+            else ->
+                speak("Sorry, I don't know that command yet.")
+        }
+    }
+
+    private fun openApp(
+        packageName: String,
+        appName: String
+    ) {
+
+        val intent =
+            packageManager.getLaunchIntentForPackage(packageName)
+
+        if (intent != null) {
+            startActivity(intent)
+            speak("Opening $appName")
+        } else {
+            speak("$appName is not installed")
+        }
     }
 
     private fun speak(text: String) {
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "vox")
+
+        if (text.isBlank()) return
+
+        tts.stop()
+
+        tts.setOnUtteranceProgressListener(
+            object : android.speech.tts.UtteranceProgressListener() {
+
+                override fun onStart(utteranceId: String?) {}
+
+                override fun onDone(utteranceId: String?) {
+
+                    if (autoListen) {
+
+                        runOnUiThread {
+
+                            android.os.Handler(mainLooper).postDelayed({
+
+                                startListening()
+
+                            }, 500)
+                        }
+                    }
+                }
+
+                override fun onError(utteranceId: String?) {}
+            }
+        )
+
+        tts.speak(
+            text,
+            TextToSpeech.QUEUE_FLUSH,
+            null,
+            "VOX_REPLY"
+        )
     }
 
     override fun onDestroy() {
