@@ -4,26 +4,36 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Handler
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import java.text.SimpleDateFormat
 import java.util.*
 
 class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
-    private var autoListen = true
+
     private lateinit var recognizer: SpeechRecognizer
     private lateinit var tts: TextToSpeech
+
+    private var autoListen = true
 
     private val textState = mutableStateOf("VOX Ready")
     private val listeningState = mutableStateOf(false)
@@ -34,12 +44,18 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         recognizer = SpeechRecognizer.createSpeechRecognizer(this)
         tts = TextToSpeech(this, this)
 
+        Handler(mainLooper).postDelayed({
+            startListening()
+        }, 1500)
+
         setContent {
+
             MaterialTheme {
 
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .background(Color.Black)
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
@@ -47,39 +63,68 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
                     Text(
                         text = "VOX ASSISTANT",
+                        color = Color.White,
                         style = MaterialTheme.typography.headlineMedium
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(40.dp))
 
-                    Button(
-                        onClick = {
-                            startListening()
-                        }
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.size(220.dp)
                     ) {
+
+                        val infiniteTransition =
+                            rememberInfiniteTransition()
+
+                        val scale by infiniteTransition.animateFloat(
+                            initialValue = 0.9f,
+                            targetValue = 1.1f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(1000),
+                                repeatMode = RepeatMode.Reverse
+                            )
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .size((180 * scale).dp)
+                                .background(
+                                    color = Color(0xFF00BFFF),
+                                    shape = CircleShape
+                                )
+                        )
+
                         Text(
-                            if (listeningState.value)
-                                "Listening..."
+                            text = if (listeningState.value)
+                                "LISTENING"
                             else
-                                "Talk to VOX"
+                                "VOX",
+                            color = Color.White
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(30.dp))
 
-                    Text(textState.value)
+                    Text(
+                        text = textState.value,
+                        color = Color.White
+                    )
                 }
             }
         }
     }
 
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            tts.language = Locale.US
-            tts.setSpeechRate(0.9f)
-            tts.setPitch(1.0f)
-        }
+    override fun onResume() {
+        super.onResume()
+
+        autoListen = true
+
+        Handler(mainLooper).postDelayed({
+            startListening()
+        }, 1000)
     }
+
     override fun onStop() {
         super.onStop()
 
@@ -90,8 +135,18 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         } catch (_: Exception) {
         }
     }
+
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            tts.language = Locale.US
+            tts.setSpeechRate(0.9f)
+        }
+    }
+
     private fun startListening() {
+
         if (listeningState.value) return
+
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.RECORD_AUDIO
@@ -101,55 +156,68 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             return
         }
 
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+        val intent = Intent(
+            RecognizerIntent.ACTION_RECOGNIZE_SPEECH
+        ).apply {
             putExtra(
                 RecognizerIntent.EXTRA_LANGUAGE_MODEL,
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
             )
+
             putExtra(
                 RecognizerIntent.EXTRA_LANGUAGE,
                 Locale.getDefault()
             )
         }
 
-        recognizer.setRecognitionListener(object : RecognitionListener {
+        recognizer.setRecognitionListener(
+            object : RecognitionListener {
 
-            override fun onReadyForSpeech(params: Bundle?) {
-                listeningState.value = true
-                textState.value = "Listening..."
-            }
-
-            override fun onResults(results: Bundle?) {
-
-                listeningState.value = false
-
-                val text = results
-                    ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                    ?.firstOrNull()
-                    ?: ""
-
-                textState.value = text
-
-                if (text.isNotBlank()) {
-                    handleInput(text)
+                override fun onReadyForSpeech(params: Bundle?) {
+                    listeningState.value = true
+                    textState.value = "Listening..."
                 }
-            }
 
-            override fun onError(error: Int) {
-                listeningState.value = false
-                textState.value = "Try Again"
-            }
+                override fun onResults(results: Bundle?) {
 
-            override fun onEndOfSpeech() {
-                listeningState.value = false
-            }
+                    listeningState.value = false
 
-            override fun onBeginningOfSpeech() {}
-            override fun onRmsChanged(rmsdB: Float) {}
-            override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onPartialResults(partialResults: Bundle?) {}
-            override fun onEvent(eventType: Int, params: Bundle?) {}
-        })
+                    val text = results
+                        ?.getStringArrayList(
+                            SpeechRecognizer.RESULTS_RECOGNITION
+                        )
+                        ?.firstOrNull()
+                        ?: ""
+
+                    textState.value = text
+
+                    if (text.isNotBlank()) {
+                        handleInput(text)
+                    }
+                }
+
+                override fun onError(error: Int) {
+
+                    listeningState.value = false
+
+                    if (autoListen) {
+                        Handler(mainLooper).postDelayed({
+                            startListening()
+                        }, 1000)
+                    }
+                }
+
+                override fun onEndOfSpeech() {
+                    listeningState.value = false
+                }
+
+                override fun onBeginningOfSpeech() {}
+                override fun onRmsChanged(rmsdB: Float) {}
+                override fun onBufferReceived(buffer: ByteArray?) {}
+                override fun onPartialResults(partialResults: Bundle?) {}
+                override fun onEvent(eventType: Int, params: Bundle?) {}
+            }
+        )
 
         recognizer.startListening(intent)
     }
@@ -202,12 +270,6 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                     "Chrome"
                 )
 
-            msg.contains("good morning") ->
-                speak("Good morning Prashanth")
-
-            msg.contains("good night") ->
-                speak("Good night Prashanth")
-
             else ->
                 speak("Sorry, I don't know that command yet.")
         }
@@ -231,27 +293,19 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
     private fun speak(text: String) {
 
-        if (text.isBlank()) return
-
         tts.stop()
 
         tts.setOnUtteranceProgressListener(
-            object : android.speech.tts.UtteranceProgressListener() {
+            object : UtteranceProgressListener() {
 
                 override fun onStart(utteranceId: String?) {}
 
                 override fun onDone(utteranceId: String?) {
 
                     if (autoListen) {
-
-                        runOnUiThread {
-
-                            android.os.Handler(mainLooper).postDelayed({
-
-                                startListening()
-
-                            }, 500)
-                        }
+                        Handler(mainLooper).postDelayed({
+                            startListening()
+                        }, 500)
                     }
                 }
 
@@ -268,6 +322,7 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     }
 
     override fun onDestroy() {
+        autoListen = false
         recognizer.destroy()
         tts.shutdown()
         super.onDestroy()
