@@ -306,12 +306,76 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                     "com.android.chrome",
                     "Chrome"
                 )
-
+            msg.contains("news") ->
+                getNews()
             else ->
                 speak("Sorry, I don't know that command yet.")
         }
     }
+    private fun getNews() {
 
+        Thread {
+
+            try {
+
+                val apiKey = "1d04b36f187644cebcce4cee8bcb9716"
+
+                val url = java.net.URL(
+                    "https://newsapi.org/v2/top-headlines?country=in&pageSize=1&apiKey=$apiKey"
+                )
+
+                val connection =
+                    url.openConnection() as java.net.HttpURLConnection
+
+                connection.requestMethod = "GET"
+
+                val code = connection.responseCode
+
+                val response = if (code == 200) {
+                    connection.inputStream.bufferedReader().readText()
+                } else {
+                    connection.errorStream.bufferedReader().readText()
+                }
+
+                runOnUiThread {
+                    textState.value = "HTTP $code\n$response"
+                }
+
+                if (code == 200) {
+
+                    val json = org.json.JSONObject(response)
+
+                    val articles = json.getJSONArray("articles")
+
+                    if (articles.length() > 0) {
+
+                        val title = articles
+                            .getJSONObject(0)
+                            .getString("title")
+
+                        runOnUiThread {
+                            textState.value = title
+                            speak("Today's top news. $title")
+                        }
+                    }
+
+                } else {
+
+                    runOnUiThread {
+                        speak("News service error")
+                    }
+                }
+
+            } catch (e: Exception) {
+
+                runOnUiThread {
+                    textState.value = e.toString()
+                    speak("Unable to fetch news")
+                }
+            }
+
+        }.start()
+    }
     private fun openApp(
         packageName: String,
         appName: String
