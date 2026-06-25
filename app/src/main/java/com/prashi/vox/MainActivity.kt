@@ -1,5 +1,7 @@
 package com.prashi.vox
 
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -38,12 +40,15 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     private val textState = mutableStateOf("VOX Ready")
     private val listeningState = mutableStateOf(false)
 
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         recognizer = SpeechRecognizer.createSpeechRecognizer(this)
         tts = TextToSpeech(this, this)
-
+        fusedLocationClient =
+            LocationServices.getFusedLocationProviderClient(this)
         Handler(mainLooper).postDelayed({
             startListening()
         }, 1500)
@@ -221,7 +226,38 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
         recognizer.startListening(intent)
     }
+    private fun getCurrentLocationWeather() {
 
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+
+            textState.value = "Location permission required"
+
+            requestPermissions(
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                101
+            )
+            return
+        }
+
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location ->
+
+                if (location != null) {
+
+                    val latitude = location.latitude
+                    val longitude = location.longitude
+
+                    getWeather(latitude, longitude)
+
+                } else {
+                    speak("Unable to get your location")
+                }
+            }
+    }
     private fun handleInput(text: String) {
 
         val msg = text.lowercase()
@@ -242,7 +278,8 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
                 speak("Current time is $time")
             }
-
+            msg.contains("weather") ->
+                getCurrentLocationWeather()
             msg.contains("date") -> {
                 val date = SimpleDateFormat(
                     "dd MMMM yyyy",
@@ -290,7 +327,73 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             speak("$appName is not installed")
         }
     }
+    private fun getWeather(lat: Double, lon: Double) {
 
+        Thread {
+
+            try {
+
+                val apiKey = "a03a3a57ef0cf99c536393f48326becc"
+
+                val url = java.net.URL(
+                    "https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey&units=metric"
+                )
+
+                val connection =
+                    url.openConnection() as java.net.HttpURLConnection
+
+                connection.requestMethod = "GET"
+
+                val code = connection.responseCode
+
+                val response = if (code == 200) {
+                    connection.inputStream.bufferedReader().readText()
+                } else {
+                    connection.errorStream.bufferedReader().readText()
+                }
+
+                runOnUiThread {
+                    textState.value = "HTTP $code\n$response"
+                }
+
+                if (code == 200) {
+
+                    val json = org.json.JSONObject(response)
+
+                    val temp = json
+                        .getJSONObject("main")
+                        .getDouble("temp")
+
+                    val weather = json
+                        .getJSONArray("weather")
+                        .getJSONObject(0)
+                        .getString("description")
+
+                    runOnUiThread {
+
+                        val city = json.getString("name")
+
+                        val message =
+                            "Current temperature in $city is $temp degree Celsius with $weather"
+                        textState.value = message
+                        speak(message)
+                    }
+                } else {
+
+                    runOnUiThread {
+                        speak("Weather service error")
+                    }
+                }
+
+            } catch (e: Exception) {
+
+                runOnUiThread {
+                    textState.value = e.toString()
+                }
+            }
+
+        }.start()
+    }
     private fun speak(text: String) {
 
         tts.stop()
