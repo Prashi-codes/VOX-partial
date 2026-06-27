@@ -41,12 +41,13 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
     private val listeningState = mutableStateOf(false)
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-
+    private lateinit var newsManager: NewsManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         recognizer = SpeechRecognizer.createSpeechRecognizer(this)
         tts = TextToSpeech(this, this)
+        newsManager = NewsManager()
         fusedLocationClient =
             LocationServices.getFusedLocationProviderClient(this)
         Handler(mainLooper).postDelayed({
@@ -310,76 +311,29 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                     msg.contains("todays news") ||
                     msg.contains("news") ||
                     msg.contains("ಸುದ್ದಿ") ->
-                getKannadaNews()
+                newsManager.getKannadaNews(
+
+                    onSuccess = { news ->
+
+                        runOnUiThread {
+
+                            textState.value = news
+                            speak(news)
+                        }
+                    },
+
+                    onError = { error ->
+
+                        runOnUiThread {
+
+                            textState.value = error
+                            speak("ಸುದ್ದಿ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ")
+                        }
+                    }
+                )
             else ->
                 speak("Sorry, I don't know that command yet.")
         }
-    }
-    private fun getKannadaNews() {
-
-        Thread {
-
-            try {
-
-                val apiKey = "pub_4f5f477569164a57aaad97e75901697d"
-
-                val url = java.net.URL(
-                    "https://newsdata.io/api/1/news?apikey=$apiKey&language=kn&country=in&category=top&size=5"
-                )
-
-                val response = url.readText()
-
-                val json = org.json.JSONObject(response)
-
-                val results = json.getJSONArray("results")
-
-                if (results.length() == 0) {
-
-                    runOnUiThread {
-                        speak("ಇಂದು ಯಾವುದೇ ಸುದ್ದಿ ಲಭ್ಯವಿಲ್ಲ")
-                    }
-
-                    return@Thread
-                }
-
-                val newsBuilder = StringBuilder()
-
-                val totalNews = minOf(5, results.length())
-
-                for (i in 0 until totalNews) {
-
-                    val title = results
-                        .getJSONObject(i)
-                        .optString("title", "")
-
-                    if (title.isNotEmpty()) {
-
-                        newsBuilder.append(
-                            "ಸುದ್ದಿ ${i + 1}. $title. "
-                        )
-                    }
-                }
-
-                val finalNews = newsBuilder.toString()
-
-                runOnUiThread {
-
-                    textState.value = finalNews
-
-                    speak("ಇಂದಿನ ಪ್ರಮುಖ ಕರ್ನಾಟಕ ಸುದ್ದಿಗಳು. $finalNews")
-                }
-
-            } catch (e: Exception) {
-
-                runOnUiThread {
-
-                    textState.value = e.toString()
-
-                    speak("ಸುದ್ದಿ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ")
-                }
-            }
-
-        }.start()
     }
     private fun openApp(
         packageName: String,

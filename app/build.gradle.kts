@@ -34,6 +34,7 @@ android {
 }
 
 dependencies {
+    implementation("org.json:json:20240303")
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
