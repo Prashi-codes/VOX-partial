@@ -143,7 +143,7 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            tts.language = Locale.US
+            tts.language = Locale("kn", "IN")
             tts.setSpeechRate(0.9f)
         }
     }
@@ -306,71 +306,76 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                     "com.android.chrome",
                     "Chrome"
                 )
-            msg.contains("news") ->
-                getNews()
+            msg.contains("today's news") ||
+                    msg.contains("todays news") ||
+                    msg.contains("news") ||
+                    msg.contains("ಸುದ್ದಿ") ->
+                getKannadaNews()
             else ->
                 speak("Sorry, I don't know that command yet.")
         }
     }
-    private fun getNews() {
+    private fun getKannadaNews() {
 
         Thread {
 
             try {
 
-                val apiKey = "1d04b36f187644cebcce4cee8bcb9716"
+                val apiKey = "pub_4f5f477569164a57aaad97e75901697d"
 
                 val url = java.net.URL(
-                    "https://newsapi.org/v2/top-headlines?country=in&pageSize=1&apiKey=$apiKey"
+                    "https://newsdata.io/api/1/news?apikey=$apiKey&language=kn&country=in&category=top&size=5"
                 )
 
-                val connection =
-                    url.openConnection() as java.net.HttpURLConnection
+                val response = url.readText()
 
-                connection.requestMethod = "GET"
+                val json = org.json.JSONObject(response)
 
-                val code = connection.responseCode
+                val results = json.getJSONArray("results")
 
-                val response = if (code == 200) {
-                    connection.inputStream.bufferedReader().readText()
-                } else {
-                    connection.errorStream.bufferedReader().readText()
-                }
-
-                runOnUiThread {
-                    textState.value = "HTTP $code\n$response"
-                }
-
-                if (code == 200) {
-
-                    val json = org.json.JSONObject(response)
-
-                    val articles = json.getJSONArray("articles")
-
-                    if (articles.length() > 0) {
-
-                        val title = articles
-                            .getJSONObject(0)
-                            .getString("title")
-
-                        runOnUiThread {
-                            textState.value = title
-                            speak("Today's top news. $title")
-                        }
-                    }
-
-                } else {
+                if (results.length() == 0) {
 
                     runOnUiThread {
-                        speak("News service error")
+                        speak("ಇಂದು ಯಾವುದೇ ಸುದ್ದಿ ಲಭ್ಯವಿಲ್ಲ")
                     }
+
+                    return@Thread
+                }
+
+                val newsBuilder = StringBuilder()
+
+                val totalNews = minOf(5, results.length())
+
+                for (i in 0 until totalNews) {
+
+                    val title = results
+                        .getJSONObject(i)
+                        .optString("title", "")
+
+                    if (title.isNotEmpty()) {
+
+                        newsBuilder.append(
+                            "ಸುದ್ದಿ ${i + 1}. $title. "
+                        )
+                    }
+                }
+
+                val finalNews = newsBuilder.toString()
+
+                runOnUiThread {
+
+                    textState.value = finalNews
+
+                    speak("ಇಂದಿನ ಪ್ರಮುಖ ಕರ್ನಾಟಕ ಸುದ್ದಿಗಳು. $finalNews")
                 }
 
             } catch (e: Exception) {
 
                 runOnUiThread {
+
                     textState.value = e.toString()
-                    speak("Unable to fetch news")
+
+                    speak("ಸುದ್ದಿ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ")
                 }
             }
 
