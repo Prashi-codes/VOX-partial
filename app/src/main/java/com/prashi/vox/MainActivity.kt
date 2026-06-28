@@ -42,12 +42,26 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var newsManager: NewsManager
+    private lateinit var weatherManager: WeatherManager
+    private lateinit var reminderManager: ReminderManager
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         recognizer = SpeechRecognizer.createSpeechRecognizer(this)
         tts = TextToSpeech(this, this)
         newsManager = NewsManager()
+        weatherManager = WeatherManager()
+        reminderManager = ReminderManager()
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                102
+            )
+        }
         fusedLocationClient =
             LocationServices.getFusedLocationProviderClient(this)
         Handler(mainLooper).postDelayed({
@@ -144,7 +158,7 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            tts.language = Locale("kn", "IN")
+            tts.language = Locale.US
             tts.setSpeechRate(0.9f)
         }
     }
@@ -252,7 +266,29 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                     val latitude = location.latitude
                     val longitude = location.longitude
 
-                    getWeather(latitude, longitude)
+                    weatherManager.getWeather(
+
+                        latitude,
+                        longitude,
+
+                        onSuccess = { weather ->
+
+                            runOnUiThread {
+
+                                textState.value = weather
+                                speak(weather)
+                            }
+                        },
+
+                        onError = { error ->
+
+                            runOnUiThread {
+
+                                textState.value = error
+                                speak("Unable to fetch weather")
+                            }
+                        }
+                    )
 
                 } else {
                     speak("Unable to get your location")
@@ -318,7 +354,7 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                         runOnUiThread {
 
                             textState.value = news
-                            speak(news)
+                            speakKannada(news)
                         }
                     },
 
@@ -327,10 +363,53 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                         runOnUiThread {
 
                             textState.value = error
-                            speak("ಸುದ್ದಿ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ")
+                            speakKannada("ಸುದ್ದಿ ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ")
                         }
                     }
                 )
+            msg.startsWith("remind me to") &&
+                    msg.contains("in") &&
+                    (msg.contains("minute") || msg.contains("minutes")) -> {
+
+                try {
+
+                    val task = msg
+                        .substringAfter("remind me to")
+                        .substringBefore("in")
+                        .trim()
+
+                    val minutes = Regex("\\d+")
+                        .find(msg.substringAfter("in"))
+                        ?.value
+                        ?.toInt() ?: 0
+
+                    if (minutes > 0) {
+
+                        val triggerTime =
+                            System.currentTimeMillis() +
+                                    (minutes * 60 * 1000)
+
+                        reminderManager.scheduleReminder(
+                            context = this,
+                            message = task,
+                            triggerTime = triggerTime
+                        )
+
+                        speak(
+                            "Reminder set to $task in $minutes minutes"
+                        )
+
+                    } else {
+                        speak("Please tell me the number of minutes")
+                    }
+
+                } catch (e: Exception) {
+
+                    speak(
+                        "Sorry, I could not understand the reminder"
+                    )
+                }
+            }
             else ->
                 speak("Sorry, I don't know that command yet.")
         }
@@ -349,73 +428,6 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         } else {
             speak("$appName is not installed")
         }
-    }
-    private fun getWeather(lat: Double, lon: Double) {
-
-        Thread {
-
-            try {
-
-                val apiKey = "a03a3a57ef0cf99c536393f48326becc"
-
-                val url = java.net.URL(
-                    "https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey&units=metric"
-                )
-
-                val connection =
-                    url.openConnection() as java.net.HttpURLConnection
-
-                connection.requestMethod = "GET"
-
-                val code = connection.responseCode
-
-                val response = if (code == 200) {
-                    connection.inputStream.bufferedReader().readText()
-                } else {
-                    connection.errorStream.bufferedReader().readText()
-                }
-
-                runOnUiThread {
-                    textState.value = "HTTP $code\n$response"
-                }
-
-                if (code == 200) {
-
-                    val json = org.json.JSONObject(response)
-
-                    val temp = json
-                        .getJSONObject("main")
-                        .getDouble("temp")
-
-                    val weather = json
-                        .getJSONArray("weather")
-                        .getJSONObject(0)
-                        .getString("description")
-
-                    runOnUiThread {
-
-                        val city = json.getString("name")
-
-                        val message =
-                            "Current temperature in $city is $temp degree Celsius with $weather"
-                        textState.value = message
-                        speak(message)
-                    }
-                } else {
-
-                    runOnUiThread {
-                        speak("Weather service error")
-                    }
-                }
-
-            } catch (e: Exception) {
-
-                runOnUiThread {
-                    textState.value = e.toString()
-                }
-            }
-
-        }.start()
     }
     private fun speak(text: String) {
 
@@ -446,7 +458,19 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             "VOX_REPLY"
         )
     }
+    private fun speakKannada(text: String) {
 
+        tts.language = Locale("kn", "IN")
+
+        tts.speak(
+            text,
+            TextToSpeech.QUEUE_FLUSH,
+            null,
+            "VOX_KANNADA"
+        )
+
+        tts.language = Locale.US
+    }
     override fun onDestroy() {
         autoListen = false
         recognizer.destroy()
