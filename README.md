@@ -41,4 +41,22 @@ _Add screenshots of your app here._
 | "Weather" | Gives current weather |
 | "Today's News" | Reads Kannada news |
 
-## 📂 Project Structure
+🔮 Future Enhancements
+Wake word detection ("Hey VOX")
+Offline voice commands
+AI-powered conversations
+Notifications and reminders
+Music control
+Smart home integration
+Background listening service
+👨‍💻 Author
+
+Prashanth KR
+
+BCA Student | Android Developer | Cloud & DevOps Enthusiast
+
+⭐ Support
+
+If you like this project, please give it a star on GitHub.
+
+Made with ❤️ using Kotlin and Jetpack Compose.
