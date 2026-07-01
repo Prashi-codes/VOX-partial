@@ -25,7 +25,8 @@ VOX is an Android voice assistant built using Kotlin and Jetpack Compose. It can
 
 ## 📸 Screenshots
 
-_Add screenshots of your app here._
+<img width="720" height="592" alt="vox" src="https://github.com/user-attachments/assets/20e4bea8-1381-4b6e-90c0-abfa48c5b05e" />
+
 
 ## 🚀 Voice Commands
 
@@ -55,7 +56,7 @@ Prashanth KR
 
 BCA Student | Android Developer | Cloud & DevOps Enthusiast
 
-⭐ Support
+⭐ Support | In Progress | Time Limit - Comes In 2.5 Months 
 
 If you like this project, please give it a star on GitHub.
 
