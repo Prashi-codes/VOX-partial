@@ -1,5 +1,9 @@
 package com.prashi.vox
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.border
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import android.Manifest
@@ -29,12 +33,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.foundation.border
 
 class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
     private lateinit var recognizer: SpeechRecognizer
     private lateinit var tts: TextToSpeech
-
+    private lateinit var groqManager: GroqManager
     private var autoListen = true
 
     private val textState = mutableStateOf("VOX Ready")
@@ -49,9 +54,18 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
         recognizer = SpeechRecognizer.createSpeechRecognizer(this)
         tts = TextToSpeech(this, this)
+        Handler(mainLooper).postDelayed({
+            tts.speak(
+                "Voice test",
+                TextToSpeech.QUEUE_FLUSH,
+                null,
+                "TEST"
+            )
+        }, 3000)
         newsManager = NewsManager()
         weatherManager = WeatherManager()
         reminderManager = ReminderManager()
+        groqManager = GroqManager()
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.POST_NOTIFICATIONS
@@ -75,17 +89,32 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black)
+                        .background(Color(0xFF050B18))
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
 
-                    Text(
-                        text = "VOX ASSISTANT",
-                        color = Color.White,
-                        style = MaterialTheme.typography.headlineMedium
-                    )
+                    Spacer(modifier = Modifier.height(35.dp))
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+
+                        Text(
+                            text = "VOX",
+                            color = Color(0xFF00E5FF),
+                            style = MaterialTheme.typography.displayLarge
+                        )
+
+                        Text(
+                            text = "AI ASSISTANT",
+                            color = Color(0xFF7FE8FF),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(25.dp))
 
                     Spacer(modifier = Modifier.height(40.dp))
 
@@ -107,29 +136,112 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                         )
 
                         Box(
-                            modifier = Modifier
-                                .size((180 * scale).dp)
-                                .background(
-                                    color = Color(0xFF00BFFF),
-                                    shape = CircleShape
-                                )
-                        )
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.size(250.dp)
+                        ) {
 
-                        Text(
-                            text = if (listeningState.value)
-                                "LISTENING"
-                            else
-                                "VOX",
-                            color = Color.White
-                        )
+                            val infiniteTransition = rememberInfiniteTransition(label = "")
+
+                            val scale by infiniteTransition.animateFloat(
+                                initialValue = 0.95f,
+                                targetValue = 1.05f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(1200),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = ""
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .size((220 * scale).dp)
+                                    .border(2.dp, Color(0xFF00E5FF), CircleShape)
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .size((170 * scale).dp)
+                                    .border(2.dp, Color(0xFF00BFFF), CircleShape)
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .size((90 * scale).dp)
+                                    .background(Color(0xFF00E5FF), CircleShape)
+                            )
+
+                            Text(
+                                text = if (listeningState.value) "LISTENING" else "READY",
+                                color = Color.White
+                            )
+                        }
+
+
                     }
 
                     Spacer(modifier = Modifier.height(30.dp))
 
-                    Text(
-                        text = textState.value,
-                        color = Color.White
-                    )
+                    val scrollState = rememberScrollState()
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .border(
+                                2.dp,
+                                Color(0xFF00E5FF),
+                                RoundedCornerShape(18.dp)
+                            )
+                            .background(
+                                Color(0xFF08111F),
+                                RoundedCornerShape(18.dp)
+                            )
+                            .padding(16.dp)
+                    ) {
+
+                        Column(
+                            modifier = Modifier
+                                .verticalScroll(scrollState)
+                        ) {
+
+                            Text(
+                                text = "CONVERSATION",
+                                color = Color(0xFF00E5FF),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(
+                                text = textState.value,
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(15.dp))
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(
+                                1.dp,
+                                Color(0xFF00E5FF),
+                                RoundedCornerShape(12.dp)
+                            )
+                            .padding(12.dp)
+                    ) {
+
+                        Text("SYSTEM STATUS", color = Color(0xFF00E5FF))
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text("● AI : ONLINE", color = Color.Green)
+                        Text("● Voice : ACTIVE", color = Color.Green)
+                        Text("● Internet : CONNECTED", color = Color.Green)
+                        Text("● Weather : READY", color = Color.Green)
+                        Text("● Reminder : ACTIVE", color = Color.Green)
+                    }
                 }
             }
         }
@@ -158,7 +270,15 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            tts.language = Locale.US
+
+            val result = tts.setLanguage(Locale.US)
+
+            if (result == TextToSpeech.LANG_MISSING_DATA ||
+                result == TextToSpeech.LANG_NOT_SUPPORTED) {
+
+                textState.value = "TTS language not supported"
+            }
+
             tts.setSpeechRate(0.9f)
         }
     }
@@ -410,8 +530,31 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                     )
                 }
             }
-            else ->
-                speak("Sorry, I don't know that command yet.")
+            else -> {
+
+                groqManager.askAI(
+
+                    question = text,
+
+                    onSuccess = { answer ->
+
+                        runOnUiThread {
+
+                            textState.value = answer
+                            speak(answer)
+                        }
+                    },
+
+                    onError = { error ->
+
+                        runOnUiThread {
+
+                            textState.value = error
+                            speak("Sorry, I couldn't reach the AI.")
+                        }
+                    }
+                )
+            }
         }
     }
     private fun openApp(
