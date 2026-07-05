@@ -42,7 +42,9 @@ VOX is an Android voice assistant built using Kotlin and Jetpack Compose. It can
 | "Open WhatsApp" | Opens WhatsApp |
 | "Open Chrome" | Opens Google Chrome |
 | "Weather" | Gives current weather |
-| "Today's News" | Reads Kannada news |
+| "Today's News" | Reads Kannada news | 
+| "Updated Groq AI plugin using API and perform certain task" |
+| "Updated UI design cleanly" |
 
 🔮 Future Enhancements
 Wake word detection ("Hey VOX")
