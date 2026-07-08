@@ -1,7 +1,10 @@
-package com.prashi.vox
+package com.prashi.vox.ai
 
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -50,11 +53,11 @@ class GroqManager {
             )
         )
 
-        api.chat(request).enqueue(object : retrofit2.Callback<GroqResponse> {
+        api.chat(request).enqueue(object : Callback<GroqResponse> {
 
             override fun onResponse(
-                call: retrofit2.Call<GroqResponse>,
-                response: retrofit2.Response<GroqResponse>
+                call: Call<GroqResponse>,
+                response: Response<GroqResponse>
             ) {
 
                 if (response.isSuccessful) {
@@ -86,7 +89,7 @@ class GroqManager {
             }
 
             override fun onFailure(
-                call: retrofit2.Call<GroqResponse>,
+                call: Call<GroqResponse>,
                 t: Throwable
             ) {
                 onError(t.message ?: "Unknown error")

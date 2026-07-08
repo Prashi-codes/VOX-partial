@@ -1,4 +1,4 @@
-package com.prashi.vox
+package com.prashi.vox.ai
 
 data class GroqRequest(
     val model: String,

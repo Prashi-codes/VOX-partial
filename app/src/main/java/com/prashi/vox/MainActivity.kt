@@ -1,9 +1,23 @@
 package com.prashi.vox
 
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.border
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.runtime.remember
+import com.prashi.vox.components.JarvisMenu
+import androidx.compose.runtime.mutableStateOf
+import com.prashi.vox.components.VoxHeader
+import com.prashi.vox.components.JarvisCore
+import com.prashi.vox.components.ConversationPanel
+import com.prashi.vox.components.StatusPanel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import android.Manifest
@@ -18,14 +32,9 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,7 +42,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.compose.foundation.border
+import com.prashi.vox.ai.GroqManager
+import com.prashi.vox.news.NewsManager
+import com.prashi.vox.reminder.ReminderManager
+import com.prashi.vox.weather.WeatherManager
 
 class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
@@ -86,167 +98,115 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
             MaterialTheme {
 
-                Column(
+                val menuOpen = remember { mutableStateOf(false) }
+
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color(0xFF050B18))
-                        .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
                 ) {
 
-                    Spacer(modifier = Modifier.height(35.dp))
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-
-                        Text(
-                            text = "VOX",
-                            color = Color(0xFF00E5FF),
-                            style = MaterialTheme.typography.displayLarge
-                        )
-
-                        Text(
-                            text = "AI ASSISTANT",
-                            color = Color(0xFF7FE8FF),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(25.dp))
-
-                    Spacer(modifier = Modifier.height(40.dp))
-
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(220.dp)
-                    ) {
-
-                        val infiniteTransition =
-                            rememberInfiniteTransition()
-
-                        val scale by infiniteTransition.animateFloat(
-                            initialValue = 0.9f,
-                            targetValue = 1.1f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1000),
-                                repeatMode = RepeatMode.Reverse
-                            )
-                        )
-
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.size(250.dp)
-                        ) {
-
-                            val infiniteTransition = rememberInfiniteTransition(label = "")
-
-                            val scale by infiniteTransition.animateFloat(
-                                initialValue = 0.95f,
-                                targetValue = 1.05f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(1200),
-                                    repeatMode = RepeatMode.Reverse
-                                ),
-                                label = ""
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .size((220 * scale).dp)
-                                    .border(2.dp, Color(0xFF00E5FF), CircleShape)
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .size((170 * scale).dp)
-                                    .border(2.dp, Color(0xFF00BFFF), CircleShape)
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .size((90 * scale).dp)
-                                    .background(Color(0xFF00E5FF), CircleShape)
-                            )
-
-                            Text(
-                                text = if (listeningState.value) "LISTENING" else "READY",
-                                color = Color.White
-                            )
-                        }
-
-
-                    }
-
-                    Spacer(modifier = Modifier.height(30.dp))
-
-                    val scrollState = rememberScrollState()
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .border(
-                                2.dp,
-                                Color(0xFF00E5FF),
-                                RoundedCornerShape(18.dp)
-                            )
-                            .background(
-                                Color(0xFF08111F),
-                                RoundedCornerShape(18.dp)
-                            )
-                            .padding(16.dp)
-                    ) {
-
-                        Column(
-                            modifier = Modifier
-                                .verticalScroll(scrollState)
-                        ) {
-
-                            Text(
-                                text = "CONVERSATION",
-                                color = Color(0xFF00E5FF),
-                                style = MaterialTheme.typography.titleSmall
-                            )
-
-                            Spacer(modifier = Modifier.height(10.dp))
-
-                            Text(
-                                text = textState.value,
-                                color = Color.White,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(15.dp))
-
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .border(
-                                1.dp,
-                                Color(0xFF00E5FF),
-                                RoundedCornerShape(12.dp)
-                            )
-                            .padding(12.dp)
+                            .fillMaxSize()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
 
-                        Text("SYSTEM STATUS", color = Color(0xFF00E5FF))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Start
+                        ) {
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                            IconButton(
+                                onClick = {
+                                    menuOpen.value = !menuOpen.value
+                                }
+                            ) {
 
-                        Text("● AI : ONLINE", color = Color.Green)
-                        Text("● Voice : ACTIVE", color = Color.Green)
-                        Text("● Internet : CONNECTED", color = Color.Green)
-                        Text("● Weather : READY", color = Color.Green)
-                        Text("● Reminder : ACTIVE", color = Color.Green)
+                                Icon(
+                                    imageVector = Icons.Default.Menu,
+                                    contentDescription = "Menu",
+                                    tint = Color(0xFF00E5FF)
+                                )
+
+                            }
+
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        VoxHeader()
+
+                        Spacer(modifier = Modifier.height(25.dp))
+
+                        JarvisCore(
+                            listening = listeningState.value
+                        )
+
+                        Spacer(modifier = Modifier.height(30.dp))
+
+                        ConversationPanel(
+                            text = textState.value
+                        )
+
+                        Spacer(modifier = Modifier.height(15.dp))
+
+                        StatusPanel()
+
                     }
+
+                    AnimatedVisibility(
+                        visible = menuOpen.value,
+                        enter = slideInHorizontally(
+                            initialOffsetX = { -it }
+                        ),
+                        exit = slideOutHorizontally(
+                            targetOffsetX = { -it }
+                        )
+                    ) {
+
+                        JarvisMenu(
+
+                            onHome = {
+                                menuOpen.value = false
+                            },
+
+                            onChat = {
+                                menuOpen.value = false
+                            },
+
+                            onTravel = {
+                                menuOpen.value = false
+                            },
+
+                            onNotes = {
+                                menuOpen.value = false
+                            },
+
+                            onWeather = {
+                                menuOpen.value = false
+                            },
+
+                            onNews = {
+                                menuOpen.value = false
+                            },
+
+                            onSettings = {
+                                menuOpen.value = false
+                            }
+
+                        )
+
+                    }
+
                 }
+
             }
+
         }
     }
-
     override fun onResume() {
         super.onResume()
 

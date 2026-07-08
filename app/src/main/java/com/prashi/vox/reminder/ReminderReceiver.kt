@@ -1,4 +1,4 @@
-package com.prashi.vox
+package com.prashi.vox.reminder
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import com.prashi.vox.R
 
 class ReminderReceiver : BroadcastReceiver() {
 

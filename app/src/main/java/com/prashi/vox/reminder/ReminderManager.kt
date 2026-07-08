@@ -1,4 +1,4 @@
-package com.prashi.vox
+package com.prashi.vox.reminder
 
 import android.app.AlarmManager
 import android.app.PendingIntent

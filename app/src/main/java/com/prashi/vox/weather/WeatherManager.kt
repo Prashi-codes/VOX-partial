@@ -1,4 +1,4 @@
-package com.prashi.vox
+package com.prashi.vox.weather
 
 import org.json.JSONObject
 import java.net.HttpURLConnection
