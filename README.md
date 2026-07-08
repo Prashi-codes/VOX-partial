@@ -25,7 +25,9 @@ VOX is an Android voice assistant built using Kotlin and Jetpack Compose. It can
 
 ## 📸 Screenshots
 
-<img width="720" height="592" alt="vox" src="https://github.com/user-attachments/assets/20e4bea8-1381-4b6e-90c0-abfa48c5b05e" />
+<img width="720" height="592" alt="vox" src="https://github.com/user-attachments/assets/20e4bea8-1381-4b6e-90c0-abfa48c5b05e" />--THIS IS VOX VERSION (V1.1)
+<img width="720" height="1600" alt="VOX1" src="https://github.com/user-attachments/assets/0087cb57-23ed-4287-a608-e92170cb2b81" />--THIS I SVOX VERSION(V1.2)-UPDATED UI DESIGN LIKE JARVIS AI DESIGN>
+
 
 
 ## 🚀 Voice Commands
@@ -40,7 +42,9 @@ VOX is an Android voice assistant built using Kotlin and Jetpack Compose. It can
 | "Open WhatsApp" | Opens WhatsApp |
 | "Open Chrome" | Opens Google Chrome |
 | "Weather" | Gives current weather |
-| "Today's News" | Reads Kannada news |
+| "Today's News" | Reads Kannada news | 
+| "Updated Groq AI plugin using API and perform certain task" |
+| "Updated UI design cleanly" |
 
 🔮 Future Enhancements
 Wake word detection ("Hey VOX")
@@ -50,6 +54,9 @@ Notifications and reminders
 Music control
 Smart home integration
 Background listening service
+Groq AI assistant is going to implement in this Personal AI
+Full Personal Control will be developed in future update
+
 👨‍💻 Author
 
 Prashanth KR
