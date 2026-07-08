@@ -240,7 +240,7 @@ The long-term vision is to make VOX capable of understanding voice, planning tri
 
 ## Prashanth KR
 
-BCA Student
+BCA Student | Web Developer | Android Dev | Cloud Devops
 
 Bapuji Institute of Hi-Tech Education
 
