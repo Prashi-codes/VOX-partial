@@ -54,6 +54,9 @@ Notifications and reminders
 Music control
 Smart home integration
 Background listening service
+Groq AI assistant is going to implement in this Personal AI
+Full Personal Control will be developed in future update
+
 👨‍💻 Author
 
 Prashanth KR
