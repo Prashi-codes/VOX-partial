@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
     private val textState = mutableStateOf("VOX Ready")
     private val listeningState = mutableStateOf(false)
-
+    private val isTyping = mutableStateOf(false)
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var newsManager: NewsManager
     private lateinit var weatherManager: WeatherManager
@@ -531,7 +531,8 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
                 }
             }
             else -> {
-
+                isTyping.value = true
+                textState.value = "Thinking..."
                 groqManager.askAI(
 
                     question = text,
@@ -619,5 +620,28 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
         recognizer.destroy()
         tts.shutdown()
         super.onDestroy()
+    }
+    private fun animateAnswer(answer: String) {
+
+        Thread {
+
+            val builder = StringBuilder()
+
+            for (c in answer) {
+
+                builder.append(c)
+
+                runOnUiThread {
+                    textState.value = builder.toString()
+                }
+
+                Thread.sleep(15)
+            }
+
+            runOnUiThread {
+                speak(answer)
+            }
+
+        }.start()
     }
 }
