@@ -130,7 +130,7 @@ Future features include:
 ### 💬 AI Memory
 
 VOX will remember conversations and provide personalized assistance.
-
+Will remember your history that you searched for.
 ---
 
 # 🖥 Technology Stack
