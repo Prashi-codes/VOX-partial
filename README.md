@@ -263,7 +263,7 @@ Your support motivates future development.
 
 # 📜 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License.All Rights Reserved.
 
 ---
 
