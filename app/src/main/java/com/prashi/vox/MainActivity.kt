@@ -46,6 +46,8 @@ import com.prashi.vox.ai.GroqManager
 import com.prashi.vox.news.NewsManager
 import com.prashi.vox.reminder.ReminderManager
 import com.prashi.vox.weather.WeatherManager
+import androidx.navigation.compose.rememberNavController
+import com.prashi.vox.navigation.AppNavigation
 
 class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
@@ -99,7 +101,7 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
             MaterialTheme {
 
                 val menuOpen = remember { mutableStateOf(false) }
-
+                val navController = rememberNavController()
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -137,23 +139,11 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        VoxHeader()
-
-                        Spacer(modifier = Modifier.height(25.dp))
-
-                        JarvisCore(
-                            listening = listeningState.value
+                        AppNavigation(
+                            navController = navController,
+                            listening = listeningState.value,
+                            conversation = textState.value
                         )
-
-                        Spacer(modifier = Modifier.height(30.dp))
-
-                        ConversationPanel(
-                            text = textState.value
-                        )
-
-                        Spacer(modifier = Modifier.height(15.dp))
-
-                        StatusPanel()
 
                     }
 
@@ -171,30 +161,37 @@ class MainActivity : ComponentActivity(), TextToSpeech.OnInitListener {
 
                             onHome = {
                                 menuOpen.value = false
+                                navController.navigate("home")
                             },
 
                             onChat = {
                                 menuOpen.value = false
+                                navController.navigate("chat")
                             },
 
-                            onTravel = {
+                                    onTravel = {
                                 menuOpen.value = false
+                                navController.navigate("travel")
                             },
 
-                            onNotes = {
+                                    onNotes = {
                                 menuOpen.value = false
+                                navController.navigate("notes")
                             },
 
-                            onWeather = {
+                                    onWeather = {
                                 menuOpen.value = false
+                                navController.navigate("weather")
                             },
 
-                            onNews = {
+                                    onNews = {
                                 menuOpen.value = false
+                                navController.navigate("news")
                             },
 
-                            onSettings = {
+                                    onSettings = {
                                 menuOpen.value = false
+                                navController.navigate("settings")
                             }
 
                         )

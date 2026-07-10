@@ -8,7 +8,9 @@ import com.prashi.vox.screens.*
 
 @Composable
 fun AppNavigation(
-    navController: NavHostController
+    navController: NavHostController,
+    listening: Boolean,
+    conversation: String
 ) {
 
     NavHost(
@@ -17,7 +19,10 @@ fun AppNavigation(
     ) {
 
         composable("home") {
-            HomeScreen()
+            HomeScreen(
+                listening = listening,
+                conversation = conversation
+            )
         }
 
         composable("chat") {
