@@ -4,7 +4,13 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.prashi.vox.screens.*
+import com.prashi.vox.screens.ChatScreen
+import com.prashi.vox.screens.HomeScreen
+import com.prashi.vox.screens.NewsScreen
+import com.prashi.vox.screens.NotesScreen
+import com.prashi.vox.screens.SettingsScreen
+import com.prashi.vox.screens.WeatherScreen
+import com.prashi.vox.travel.TravelScreen
 
 @Composable
 fun AppNavigation(
